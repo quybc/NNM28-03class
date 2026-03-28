@@ -49,6 +49,24 @@ function isValidUsername(username) {
   return /^[a-zA-Z0-9]+$/.test(username);
 }
 
+async function getOrCreateUserRole() {
+  let userRole = await roleModel.findOne({
+    isDeleted: false,
+    name: { $regex: /^user$/i }
+  });
+
+  if (userRole) {
+    return userRole;
+  }
+
+  userRole = new roleModel({
+    name: "USER",
+    description: "Default role for imported users"
+  });
+  await userRole.save();
+  return userRole;
+}
+
 router.get("/", CheckLogin,CheckRole("ADMIN", "USER"), async function (req, res, next) {
     let users = await userModel
       .find({ isDeleted: false })
@@ -112,16 +130,7 @@ router.post("/import", uploadExcel.single('file'), async function (req, res, nex
     let usernameColumn = headerMap.username || 1;
     let emailColumn = headerMap.email || 2;
 
-    let userRole = await roleModel.findOne({
-      isDeleted: false,
-      name: { $regex: /^user$/i }
-    });
-
-    if (!userRole) {
-      return res.status(404).send({
-        message: "khong tim thay role USER/user"
-      });
-    }
+    let userRole = await getOrCreateUserRole();
 
     let existingUsers = await userModel.find({ isDeleted: false }).select('username email');
     let usernames = new Set(existingUsers.map(function (user) {
