@@ -5,6 +5,10 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 let mongoose = require('mongoose')
 
+if (typeof process.loadEnvFile === 'function') {
+  process.loadEnvFile(path.join(__dirname, '.env'));
+}
+
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
